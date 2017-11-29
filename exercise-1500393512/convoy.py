@@ -6,41 +6,31 @@ DAYS = dict({'M': 0, 'T': 1, 'W': 2, 'R': 3, 'F': 4})
 
 
 class Scheduler:
-    def __init__(self, shipments):
+    def __init__(self, edges):
         self.__graph = dict({})
         self.__paths = []
 
-        for shipment in shipments:
-            debug_print(shipment)
+        for edge in edges:
+            debug_print(edge)
 
-            id = shipment['id']
-            origin = shipment['origin']
-            destination = shipment['destination']
-            day = shipment['day']
+            origin = edge['origin']
+            destination = edge['destination']
 
             if origin not in self.__graph:
                 self.__graph[origin] = dict({
-                    'origins': [],
-                    'destinations': []
+                    'prev_links': [],
+                    'next_links': []
                 })
 
-            self.__graph[origin]['destinations'].append(dict({
-                'id': id,
-                'name': destination,
-                'day': DAYS[day]
-            }))
+            self.__graph[origin]['next_links'].append(edge)
 
             if destination not in self.__graph:
                 self.__graph[destination] = dict({
-                    'origins': [],
-                    'destinations': []
+                    'prev_links': [],
+                    'next_links': []
                 })
 
-            self.__graph[destination]['origins'].append(dict({
-                'id': id,
-                'name': origin,
-                'day': DAYS[day]
-            }))
+            self.__graph[destination]['prev_links'].append(edge)
 
         debug_print('\n{}'.format(self.__graph))
 
@@ -61,21 +51,6 @@ class Scheduler:
         self.traverse_backward(place)
         self.traverse_forward(place)
 
-        # backward_path = self.look_backward(place)
-        #
-        # day = None
-        #
-        # if len(backward_path) != 0:
-        #     last = backward_path[len(backward_path) - 1]
-        #     day = last['day']
-        #
-        # forward_path = self.look_forward(place, day)
-        #
-        # path = backward_path + forward_path
-        #
-        # if len(backward_path + forward_path) != 0:
-        #     self.__paths.append(path)
-
     def traverse_backward(self, current, day=None):
         backward_path = self.look_backward(current, day)
 
@@ -87,7 +62,7 @@ class Scheduler:
                 link = path[0]
                 last_link = backward_path[0]
 
-                debug_print(last_link['destination'], last_link['day'], link['origin'], link['day'])
+                # debug_print(last_link['destination'], last_link['day'], link['origin'], link['day'])
 
                 if link['origin'] == last_link['destination'] and last_link['day'] == link['day'] - 1:
                     debug_print('Merging backward path {} with forward path {} at {}'.format(last_link['id'], link['id'], link['origin']))
@@ -108,7 +83,7 @@ class Scheduler:
                 link = path[len(path) - 1]
                 next_link = forward_path[0]
 
-                debug_print(link['destination'], link['day'], next_link['origin'], next_link['day'])
+                # debug_print(link['destination'], link['day'], next_link['origin'], next_link['day'])
 
                 if link['destination'] == next_link['origin'] and next_link['day'] == link['day'] + 1:
                     debug_print('Merging forward path {} with backward path {} at {}'.format(next_link['id'], link['id'], link['origin']))
@@ -123,62 +98,50 @@ class Scheduler:
         path = []
 
         # don't look before MONDAY
-        if day is not None and day == DAYS['M']:
+        if day is not None and day == 0:
             return path
 
-        # stop looking if no origins
-        if not self.__graph[current]['origins']:
+        # stop looking if no prev_links
+        if not self.__graph[current]['prev_links']:
             return path
 
         debug_print('\nChecking backward path for {} on day {}'.format(current, day))
 
-        origins_to_visit = []
+        edges_to_visit = []
 
-        for origin in self.__graph[current]['origins']:
-            if 'visited' in origin and origin['visited'] or day is not None and origin['day'] != day - 1:
+        for edge in self.__graph[current]['prev_links']:
+            if 'visited' in edge and edge['visited'] or day is not None and edge['day'] != day - 1:
                 continue
 
-            debug_print(origin)
+            debug_print(edge)
 
-            origins_to_visit.append(origin)
+            edges_to_visit.append(edge)
 
-        if len(origins_to_visit) == 0:
+        if len(edges_to_visit) == 0:
             debug_print('No paths to look backward from {} on day {}'.format(current, day))
             return path
 
-        origin = origins_to_visit.pop(0)
+        edge = edges_to_visit.pop(0)
 
-        id = origin['id']
-        name = origin['name']
-        day = origin['day']
-
-        debug_print('Adding {} to path'.format(name))
-
-        path.append(dict({
-            'id': id,
-            'origin': name,
-            'destination': current,
-            'day': day
-        }))
+        name = edge['origin']
+        day = edge['day']
 
         # mark backward link visited
-        origin['visited'] = True
+        edge['visited'] = True
 
         # mark forward link visited
-        for destination in self.__graph[name]['destinations']:
-            if destination['name'] == current:
-                destination['visited'] = True
+        for edge in self.__graph[name]['next_links']:
+            if edge['destination'] == current:
+                edge['visited'] = True
 
-        backward_path = self.look_backward(name, day)
+        path = [edge] + self.look_backward(name, day)
 
-        # for origin in origins_to_visit:
-        #     debug_print('Yet to visit {} {}'.format(origin['name'], origin['id']))
-        #     self.traverse_path(origin['name'])
-        #     debug_print('Done visiting {} {}'.format(origin['name'], origin['id']))
+        debug_print('Path: {}'.format(path))
 
-        path = path + backward_path
-
-        debug_print(path)
+        for edge in edges_to_visit:
+            debug_print('Yet to visit {} {}'.format(edge['origin'], edge['id']))
+            self.traverse_path(edge['origin'])
+            debug_print('Done visiting {} {}'.format(edge['origin'], edge['id']))
 
         return path
 
@@ -186,61 +149,50 @@ class Scheduler:
         path = []
 
         # don't look before MONDAY
-        if day is not None and day == DAYS['F']:
+        if day is not None and day == 4:
             return path
 
-        # stop looking if no destinations
-        if not self.__graph[current]['destinations']:
+        # stop looking if no next_links
+        if not self.__graph[current]['next_links']:
             return path
 
         debug_print('\nChecking forward path for {} on day {}'.format(current, day))
 
-        destinations_to_visit = []
+        edges_to_visit = []
 
-        for destination in self.__graph[current]['destinations']:
-            if 'visited' in destination and destination['visited'] or day is not None and destination['day'] != day + 1:
+        for edge in self.__graph[current]['next_links']:
+            if 'visited' in edge and edge['visited'] or day is not None and edge['day'] != day + 1:
                 continue
 
-            debug_print(destination)
+            debug_print(edge)
 
-            destinations_to_visit.append(destination)
+            edges_to_visit.append(edge)
 
-        if len(destinations_to_visit) == 0:
+        if len(edges_to_visit) == 0:
             debug_print('No paths to look forward from {} on day {}'.format(current, day))
             return path
 
-        destination = destinations_to_visit.pop(0)
+        edge = edges_to_visit.pop(0)
 
-        id = destination['id']
-        name = destination['name']
-        day = destination['day']
-
-        debug_print('Adding {} to path'.format(name))
-
-        path.append(dict({
-            'id': id,
-            'origin': current,
-            'destination': name,
-            'day': day
-        }))
+        name = edge['destination']
+        day = edge['day']
 
         # mark backward link visited
-        destination['visited'] = True
+        edge['visited'] = True
 
         # mark forward link visited
-        for origin in self.__graph[name]['origins']:
-            if origin['name'] == current:
-                origin['visited'] = True
+        for edge in self.__graph[name]['prev_links']:
+            if edge['origin'] == current:
+                edge['visited'] = True
 
-        forward_path = self.look_forward(name, day)
+        path = [edge] + self.look_forward(name, day)
 
-        # for destination in destinations_to_visit:
-        #     debug_print('Yet to visit {} {}'.format(destination['name'], destination['id']))
-        #     self.look_forward(destination['name'], destination['day'])
+        debug_print('Path: {}'.format(path))
 
-        path = path + forward_path
-
-        debug_print(path)
+        for edge in edges_to_visit:
+            debug_print('Yet to visit {} {}'.format(edge['destination'], edge['id']))
+            self.traverse_path(edge['destination'])
+            debug_print('Done visiting {} {}'.format(edge['destination'], edge['id']))
 
         return path
 
@@ -253,7 +205,7 @@ def debug_print(*args):
 
 def parse_line(line):
     shipment = line.split(' ')
-    return dict({'id': shipment[0], 'origin': shipment[1], 'destination': shipment[2], 'day': shipment[3]})
+    return dict({'id': shipment[0], 'origin': shipment[1], 'destination': shipment[2], 'day': DAYS[shipment[3]]})
 
 
 def process(lines):
@@ -294,6 +246,7 @@ def main():
         print('Error: Cannot open file \'{}\' for reading'.format(args.input_file_path))
     except Exception as e:
         print('Error: Error during process. {}'.format(e.args[0]))
+        raise
 
 
 if __name__ == '__main__':

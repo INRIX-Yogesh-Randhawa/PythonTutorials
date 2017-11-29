@@ -129,14 +129,16 @@ class Scheduler:
         # mark backward link visited
         edge['visited'] = True
 
+        path.append(edge)
+
         # mark forward link visited
         for edge in self.__graph[name]['next_links']:
             if edge['destination'] == current:
                 edge['visited'] = True
 
-        path = [edge] + self.look_backward(name, day)
-
         debug_print('Path: {}'.format(path))
+
+        path = path + self.look_backward(name, day)
 
         for edge in edges_to_visit:
             debug_print('Yet to visit {} {}'.format(edge['origin'], edge['id']))
@@ -180,12 +182,16 @@ class Scheduler:
         # mark backward link visited
         edge['visited'] = True
 
+        path.append(edge)
+
         # mark forward link visited
         for edge in self.__graph[name]['prev_links']:
             if edge['origin'] == current:
                 edge['visited'] = True
 
-        path = [edge] + self.look_forward(name, day)
+        debug_print('Path: {}'.format(path))
+
+        path = path + self.look_forward(name, day)
 
         debug_print('Path: {}'.format(path))
 

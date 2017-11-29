@@ -4,11 +4,11 @@ debug = False
 
 DAYS = dict({'M': 0, 'T': 1, 'W': 2, 'R': 3, 'F': 4})
 
+
 class Scheduler:
     def __init__(self, shipments):
-        self.__network = dict({})
+        self.__graph = dict({})
         self.__paths = []
-        self.__stack = []
 
         for shipment in shipments:
             debug_print(shipment)
@@ -18,34 +18,34 @@ class Scheduler:
             destination = shipment['destination']
             day = shipment['day']
 
-            if origin not in self.__network:
-                self.__network[origin] = dict({
+            if origin not in self.__graph:
+                self.__graph[origin] = dict({
                     'origins': [],
                     'destinations': []
                 })
 
-            self.__network[origin]['destinations'].append(dict({
+            self.__graph[origin]['destinations'].append(dict({
                 'id': id,
                 'name': destination,
                 'day': DAYS[day]
             }))
 
-            if destination not in self.__network:
-                self.__network[destination] = dict({
+            if destination not in self.__graph:
+                self.__graph[destination] = dict({
                     'origins': [],
                     'destinations': []
                 })
 
-            self.__network[destination]['origins'].append(dict({
+            self.__graph[destination]['origins'].append(dict({
                 'id': id,
                 'name': origin,
                 'day': DAYS[day]
             }))
 
-        debug_print('\n{}'.format(self.__network))
+        debug_print('\n{}'.format(self.__graph))
 
     def schedule(self):
-        for place in self.__network:
+        for place in self.__graph:
             self.traverse_path(place)
 
         bundles = []
@@ -127,14 +127,14 @@ class Scheduler:
             return path
 
         # stop looking if no origins
-        if not self.__network[current]['origins']:
+        if not self.__graph[current]['origins']:
             return path
 
         debug_print('\nChecking backward path for {} on day {}'.format(current, day))
 
         origins_to_visit = []
 
-        for origin in self.__network[current]['origins']:
+        for origin in self.__graph[current]['origins']:
             if 'visited' in origin and origin['visited'] or day is not None and origin['day'] != day - 1:
                 continue
 
@@ -165,11 +165,9 @@ class Scheduler:
         origin['visited'] = True
 
         # mark forward link visited
-        for destination in self.__network[name]['destinations']:
+        for destination in self.__graph[name]['destinations']:
             if destination['name'] == current:
                 destination['visited'] = True
-
-        self.__stack.append(origin)
 
         backward_path = self.look_backward(name, day)
 
@@ -192,14 +190,14 @@ class Scheduler:
             return path
 
         # stop looking if no destinations
-        if not self.__network[current]['destinations']:
+        if not self.__graph[current]['destinations']:
             return path
 
         debug_print('\nChecking forward path for {} on day {}'.format(current, day))
 
         destinations_to_visit = []
 
-        for destination in self.__network[current]['destinations']:
+        for destination in self.__graph[current]['destinations']:
             if 'visited' in destination and destination['visited'] or day is not None and destination['day'] != day + 1:
                 continue
 
@@ -230,11 +228,9 @@ class Scheduler:
         destination['visited'] = True
 
         # mark forward link visited
-        for origin in self.__network[name]['origins']:
+        for origin in self.__graph[name]['origins']:
             if origin['name'] == current:
                 origin['visited'] = True
-
-        self.__stack.append(destination)
 
         forward_path = self.look_forward(name, day)
 

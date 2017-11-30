@@ -118,32 +118,33 @@ class Scheduler:
             edges_to_visit.append(edge)
 
         if len(edges_to_visit) == 0:
-            debug_print('No paths to look backward from {} on day {}'.format(current, day))
+            debug_print('No backward path from {} on day {}'.format(current, day and day - 1 or day))
             return path
 
-        edge = edges_to_visit.pop(0)
+        edge_in_path = edges_to_visit.pop(0)
 
-        name = edge['origin']
-        day = edge['day']
+        id = edge_in_path['id']
+        name = edge_in_path['origin']
+        day = edge_in_path['day']
 
         # mark backward link visited
-        edge['visited'] = True
+        edge_in_path['visited'] = True
 
-        path.append(edge)
+        path.append(edge_in_path)
 
         # mark forward link visited
         for edge in self.__graph[name]['next_links']:
-            if edge['destination'] == current:
+            if edge['id'] == id:
                 edge['visited'] = True
 
         debug_print('Path: {}'.format(path))
 
         path = path + self.look_backward(name, day)
 
-        for edge in edges_to_visit:
-            debug_print('Yet to visit {} {}'.format(edge['origin'], edge['id']))
-            self.traverse_path(edge['origin'])
-            debug_print('Done visiting {} {}'.format(edge['origin'], edge['id']))
+        # for edge in edges_to_visit:
+        #     debug_print('Yet to visit {} {}'.format(edge['origin'], edge['id']))
+        #     self.traverse_path(edge['origin'])
+        #     debug_print('Done visiting {} {}'.format(edge['origin'], edge['id']))
 
         return path
 
@@ -171,22 +172,23 @@ class Scheduler:
             edges_to_visit.append(edge)
 
         if len(edges_to_visit) == 0:
-            debug_print('No paths to look forward from {} on day {}'.format(current, day))
+            debug_print('No forward path from {} on day {}'.format(current, day and day + 1) or day)
             return path
 
-        edge = edges_to_visit.pop(0)
+        edge_in_path = edges_to_visit.pop(0)
 
-        name = edge['destination']
-        day = edge['day']
-
-        # mark backward link visited
-        edge['visited'] = True
-
-        path.append(edge)
+        id = edge_in_path['id']
+        name = edge_in_path['destination']
+        day = edge_in_path['day']
 
         # mark forward link visited
+        edge_in_path['visited'] = True
+
+        path.append(edge_in_path)
+
+        # mark backward link visited
         for edge in self.__graph[name]['prev_links']:
-            if edge['origin'] == current:
+            if edge['id'] == id:
                 edge['visited'] = True
 
         debug_print('Path: {}'.format(path))
@@ -195,10 +197,10 @@ class Scheduler:
 
         debug_print('Path: {}'.format(path))
 
-        for edge in edges_to_visit:
-            debug_print('Yet to visit {} {}'.format(edge['destination'], edge['id']))
-            self.traverse_path(edge['destination'])
-            debug_print('Done visiting {} {}'.format(edge['destination'], edge['id']))
+        # for edge in edges_to_visit:
+        #     debug_print('Yet to visit {} {}'.format(edge['destination'], edge['id']))
+        #     self.traverse_path(edge['destination'])
+        #     debug_print('Done visiting {} {}'.format(edge['destination'], edge['id']))
 
         return path
 

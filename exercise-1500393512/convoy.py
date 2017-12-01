@@ -57,20 +57,23 @@ class Scheduler:
         if len(backward_path) != 0:
             debug_print('\nChecking any forward paths to merge')
             backward_path_reversed = list(reversed(backward_path))
-            path_merged = False
+            path_to_merge_index = -1
             for i, path in enumerate(self.__paths):
                 link = path[0]
                 last_link = backward_path[0]
 
-                # debug_print(last_link['destination'], last_link['day'], link['origin'], link['day'])
+                # debug_print('Compare {} {} {} {}'.format(last_link['destination'], last_link['day'], link['origin'],
+                #                                          link['day']))
 
                 if link['origin'] == last_link['destination'] and last_link['day'] == link['day'] - 1:
-                    debug_print('Merging backward path {} with forward path {} at {}'.format(last_link['id'], link['id'], link['origin']))
-                    self.__paths[i] = backward_path_reversed + path
-                    debug_print(self.__paths[i])
-                    path_merged = True
+                    debug_print(
+                        'Merging backward path {} with forward path {} at {}'.format(last_link['id'], link['id'],
+                                                                                     link['origin']))
+                    path_to_merge_index = i
 
-            if not path_merged:
+            if path_to_merge_index >= 0:
+                self.__paths[path_to_merge_index] = backward_path_reversed + self.__paths[path_to_merge_index]
+            else:
                 self.__paths.append(backward_path_reversed)
 
     def traverse_forward(self, current, day=None):
@@ -78,20 +81,25 @@ class Scheduler:
 
         if len(forward_path) != 0:
             debug_print('\nChecking any backward paths to merge')
-            path_merged = False
+            path_to_merge_index = -1
             for i, path in enumerate(self.__paths):
-                link = path[len(path) - 1]
+                link = path[-1]
                 next_link = forward_path[0]
 
-                # debug_print(link['destination'], link['day'], next_link['origin'], next_link['day'])
+                # debug_print('Compare {} {} {} {}'.format(link['destination'], link['day'], next_link['origin'],
+                #                                          next_link['day']))
 
                 if link['destination'] == next_link['origin'] and next_link['day'] == link['day'] + 1:
-                    debug_print('Merging forward path {} with backward path {} at {}'.format(next_link['id'], link['id'], link['origin']))
-                    self.__paths[i] = path + forward_path
-                    debug_print(self.__paths[i])
-                    path_merged = True
+                    debug_print(
+                        'Merging forward path {} with backward path {} at {}'.format(next_link['id'], link['id'],
+                                                                                     link['origin']))
 
-            if not path_merged:
+                    path_to_merge_index = i
+
+            if path_to_merge_index >= 0:
+                self.__paths[path_to_merge_index] = self.__paths[path_to_merge_index] + forward_path
+                debug_print('Merged Path: {}'.format(self.__paths[path_to_merge_index]))
+            else:
                 self.__paths.append(forward_path)
 
     def look_backward(self, current, day=None):
@@ -141,10 +149,10 @@ class Scheduler:
 
         path = path + self.look_backward(name, day)
 
-        # for edge in edges_to_visit:
-        #     debug_print('Yet to visit {} {}'.format(edge['origin'], edge['id']))
-        #     self.traverse_path(edge['origin'])
-        #     debug_print('Done visiting {} {}'.format(edge['origin'], edge['id']))
+        for edge in edges_to_visit:
+            debug_print('Yet to visit {} {}'.format(edge['origin'], edge['id']))
+            self.traverse_path(edge['origin'])
+            debug_print('Done visiting {} {}'.format(edge['origin'], edge['id']))
 
         return path
 
@@ -197,10 +205,10 @@ class Scheduler:
 
         debug_print('Path: {}'.format(path))
 
-        # for edge in edges_to_visit:
-        #     debug_print('Yet to visit {} {}'.format(edge['destination'], edge['id']))
-        #     self.traverse_path(edge['destination'])
-        #     debug_print('Done visiting {} {}'.format(edge['destination'], edge['id']))
+        for edge in edges_to_visit:
+            debug_print('Yet to visit {} {}'.format(edge['destination'], edge['id']))
+            self.traverse_path(edge['destination'])
+            debug_print('Done visiting {} {}'.format(edge['destination'], edge['id']))
 
         return path
 

@@ -9,6 +9,7 @@ class Scheduler:
     def __init__(self, edges):
         self.__graph = dict({})
         self.__paths = []
+        self.__stack = []
 
         for edge in edges:
             debug_print(edge)
@@ -36,6 +37,9 @@ class Scheduler:
 
     def schedule(self):
         for place in self.__graph:
+            self.traverse_path(place)
+
+        for place in self.__stack:
             self.traverse_path(place)
 
         bundles = []
@@ -151,8 +155,7 @@ class Scheduler:
 
         for edge in edges_to_visit:
             debug_print('Yet to visit {} {}'.format(edge['origin'], edge['id']))
-            self.traverse_path(edge['origin'])
-            debug_print('Done visiting {} {}'.format(edge['origin'], edge['id']))
+            self.__stack.append(edge['origin'])
 
         return path
 
@@ -207,8 +210,7 @@ class Scheduler:
 
         for edge in edges_to_visit:
             debug_print('Yet to visit {} {}'.format(edge['destination'], edge['id']))
-            self.traverse_path(edge['destination'])
-            debug_print('Done visiting {} {}'.format(edge['destination'], edge['id']))
+            self.__stack.append(edge['destination'])
 
         return path
 
